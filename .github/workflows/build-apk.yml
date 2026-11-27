@@ -1,0 +1,112 @@
+name: Build Musa iOS 26 Icon Pack
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Musa repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Download icon pack template
+        run: |
+          git clone --depth 1 https://github.com/zixpo/candybar-sample.git candybar
+
+      - name: Add Musa icons
+        run: |
+          unzip -o Musa_iOS26_Liquid_Glass_Icon_Pack.zip -d iconzip
+          mkdir -p candybar/app/src/main/res/drawable-nodpi
+          cp iconzip/icons/*.png candybar/app/src/main/res/drawable-nodpi/
+
+      - name: Configure icon pack
+        run: |
+          cd candybar
+          python3 - <<'PY'
+          import os, glob, xml.etree.ElementTree as ET
+
+          icons = sorted(glob.glob("app/src/main/res/drawable-nodpi/*.png"))
+          packages = {
+            "01_google_lens":"com.google.ar.lens",
+            "02_instagram":"com.instagram.android",
+            "05_google":"com.google.android.googlequicksearchbox",
+            "06_play_store":"com.android.vending",
+            "07_phonepe":"com.phonepe.app",
+            "08_youtube_m":"com.google.android.apps.youtube.music",
+            "09_messages":"com.google.android.apps.messaging",
+            "10_camera":"com.android.camera2",
+            "11_phone":"com.google.android.dialer",
+            "12_contacts":"com.google.android.contacts",
+            "13_chrome":"com.android.chrome",
+            "15_whatsapp":"com.whatsapp",
+            "16_settings":"com.android.settings",
+            "18_calendar":"com.google.android.calendar",
+            "19_clock":"com.google.android.deskclock",
+            "20_calculator":"com.google.android.calculator",
+            "21_gemini":"com.google.android.apps.bard",
+            "26_sheets":"com.google.android.apps.docs.editors.sheets",
+            "28_flipkart":"com.flipkart.android",
+            "29_chatgpt":"com.openai.chatgpt",
+            "31_paytm":"net.one97.paytm",
+            "32_authenticator":"com.google.android.apps.authenticator2",
+            "33_swiggy":"in.swiggy.android",
+            "34_zomato":"com.application.zomato",
+            "35_youtube":"com.google.android.youtube",
+            "36_jiomart":"com.jio.mart",
+            "37_vn":"com.frontrow.vlog",
+            "39_indiamart":"com.indiamart.m"
+          }
+
+          items = []
+          for path in icons:
+              name = os.path.basename(path)[:-4]
+              drawable = name
+              items.append(f'    <item drawable="{drawable}" />')
+
+          with open("app/src/main/res/xml/drawable.xml","w") as f:
+              f.write('<?xml version="1.0" encoding="utf-8"?>\n<resources>\n<version>1</version>\n<category title="Musa iOS 26" />\n')
+              f.write("\n".join(items))
+              f.write("\n</resources>\n")
+
+          entries = []
+          for name,pkg in packages.items():
+              drawable = name
+              if os.path.exists(f"app/src/main/res/drawable-nodpi/{drawable}.png"):
+                  entries.append(f'    <item component="ComponentInfo{{{pkg}/*}}" drawable="{drawable}" />')
+
+          with open("app/src/main/res/xml/appfilter.xml","w") as f:
+              f.write('<?xml version="1.0" encoding="UTF-8"?>\n<resources>\n')
+              f.write("\n".join(entries))
+              f.write("\n</resources>\n")
+
+          for p in glob.glob("app/src/main/res/values*/strings.xml"):
+              try:
+                  tree=ET.parse(p)
+                  root=tree.getroot()
+                  for el in root.findall("string"):
+                      if el.get("name") == "app_name":
+                          el.text="Musa iOS 26 Icon Pack"
+                  tree.write(p, encoding="utf-8", xml_declaration=True)
+              except Exception:
+                  pass
+          PY
+
+      - name: Build APK
+        run: |
+          cd candybar
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Musa-iOS26-Icon-Pack
+          path: candybar/app/build/outputs/apk/debug/*.apk
