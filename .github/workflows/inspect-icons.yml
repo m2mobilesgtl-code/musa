@@ -1,0 +1,23 @@
+name: Inspect icon pack
+
+on:
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: List icons inside ZIP
+        run: |
+          python3 - <<'PY'
+          import zipfile
+          p = "Musa_iOS26_Liquid_Glass_Icon_Pack.zip"
+          with zipfile.ZipFile(p) as z:
+              files = [f for f in z.namelist() if not f.endswith("/")]
+              print("TOTAL FILES:", len(files))
+              for f in files:
+                  print(f)
+          PY
