@@ -78,7 +78,7 @@ jobs:
 
           entries = []
           for name,pkg in packages.items():
-              drawable = name
+              drawable = "icon_" + name
               if os.path.exists(f"app/src/main/res/drawable-nodpi/{drawable}.png"):
                   entries.append(f'    <item component="ComponentInfo{{{pkg}/*}}" drawable="{drawable}" />')
 
