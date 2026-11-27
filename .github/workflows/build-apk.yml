@@ -25,7 +25,7 @@ jobs:
         run: |
           unzip -o Musa_iOS26_Liquid_Glass_Icon_Pack.zip -d iconzip
           mkdir -p candybar/app/src/main/res/drawable-nodpi
-          cp iconzip/icons/*.png candybar/app/src/main/res/drawable-nodpi/
+          for f in iconzip/icons/*.png; do b=$(basename "$f"); cp "$f" "candybar/app/src/main/res/drawable-nodpi/icon_$b"; done
 
       - name: Configure icon pack
         run: |
@@ -68,7 +68,7 @@ jobs:
           items = []
           for path in icons:
               name = os.path.basename(path)[:-4]
-              drawable = name
+              drawable = "icon_" + name
               items.append(f'    <item drawable="{drawable}" />')
 
           with open("app/src/main/res/xml/drawable.xml","w") as f:
